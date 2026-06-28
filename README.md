@@ -77,4 +77,4 @@ Since this project requires no server-side compilation or backend components, it
 
 ## ✍️ Development & Contribution
 
-Want to add new chapters, customize schema data, or run the notebook locally? See the [DEVELOPMENT.md](file:////wsl.localhost/Debian/home/xx/dev/My-PostgreSQL-NoteBook/DEVELOPMENT.md) guide.
+Want to add new chapters, customize schema data, or run the notebook locally? See the [DEVELOPMENT.md](./DEVELOPMENT.md) guide.
