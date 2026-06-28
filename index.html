@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PostgreSQL Interactive Notebook</title>
+    <!-- Prism.js Tomorrow Night Theme for premium code highlighting -->
+    <link href="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/themes/prism-tomorrow.min.css" rel="stylesheet" />
+    <link rel="stylesheet" href="index.css">
+</head>
+<body>
+
+    <div class="app-container">
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10z"/><path d="M12 6v6l4 2"/></svg>
+                <h1>PG NOTEBOOK</h1>
+            </div>
+            
+            <div class="sidebar-menu">
+                <div class="menu-section-title">Notebook Chapters</div>
+                <div id="notes-menu-list">
+                    <!-- Loaded dynamically via JS -->
+                    <div class="menu-item active">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path></svg>
+                        <span>Loading Chapters...</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Database Connection Status Footer -->
+            <div class="sidebar-footer">
+                <div class="db-status-card">
+                    <div class="status-row">
+                        <span class="status-label">PostgreSQL WASM</span>
+                        <div class="status-value">
+                            <span class="status-indicator booting" id="db-status-indicator"></span>
+                            <span id="db-status-text">Booting...</span>
+                        </div>
+                    </div>
+                    <div class="status-row">
+                        <span class="status-label">IndexedDB Store</span>
+                        <span class="status-value" style="color: var(--text-secondary);" id="db-storage-name">pglite://idb-notebook</span>
+                    </div>
+                    <button class="btn-reset-db" id="btn-reset-db" title="Resets schema to initial seeded data">Reset Database</button>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Main Workspace -->
+        <main class="main-display">
+            <!-- Top Nav -->
+            <header class="top-nav">
+                <div class="nav-tabs">
+                    <button class="nav-tab active" data-tab="tab-notes">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>
+                        Interactive Notes
+                    </button>
+                    <button class="nav-tab" data-tab="tab-sandbox" id="nav-tab-sandbox">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+                        SQL Sandbox
+                    </button>
+                    <button class="nav-tab" data-tab="tab-cheatsheet">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+                        Cheatsheet
+                    </button>
+                </div>
+
+                <div class="nav-actions">
+                    <button class="btn-secondary-action" id="btn-edit-note" title="Edit this note locally">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 1 1 3 3L12 15l-4 1 1-4Z"/></svg>
+                        Edit Note
+                    </button>
+                    <button class="btn-action" id="btn-download-note" title="Download note markdown file to save to repository">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                        Export Note
+                    </button>
+                </div>
+            </header>
+
+            <!-- Page 1: Notes Renderer -->
+            <div id="tab-notes" class="page-content active">
+                <div class="notes-container markdown-body" id="notes-renderer-target">
+                    <!-- Markdown files rendered dynamically -->
+                </div>
+            </div>
+
+            <!-- Page 2: SQL Sandbox -->
+            <div id="tab-sandbox" class="page-content">
+                <div class="sandbox-layout">
+                    <!-- SQL Sandbox Main Editor and Results -->
+                    <div class="sandbox-main">
+                        <!-- SQL Editor Card -->
+                        <div class="sandbox-editor-card">
+                            <div class="sandbox-editor-header">
+                                <div class="sql-runner-title">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="4 17 10 11 4 5"/><line x1="12" y1="19" x2="20" y2="19"/></svg>
+                                    SQL Command Editor
+                                </div>
+                                <div class="sql-runner-actions">
+                                    <button class="btn-run-sql" id="btn-sandbox-run">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+                                        Execute Query (F5)
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="editor-wrapper">
+                                <textarea class="sandbox-textarea" id="sandbox-textarea" placeholder="SELECT * FROM products ORDER BY price DESC;" spellcheck="false"></textarea>
+                            </div>
+                        </div>
+
+                        <!-- SQL Output Results Card -->
+                        <div class="sandbox-results-card">
+                            <div class="sandbox-results-header">
+                                <div class="sql-runner-title">Execution Results</div>
+                                <div class="results-summary" id="sandbox-results-summary" style="padding: 0; border: none;">No queries executed yet.</div>
+                            </div>
+                            <div class="sandbox-results-content" id="sandbox-results-content">
+                                <div class="sandbox-placeholder">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M3 5V19A9 3 0 0 0 21 19V5"/><path d="M3 12A9 3 0 0 0 21 12"/></svg>
+                                    <p>Run a query above to view tabular database results</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Sidebar Schema Explorer -->
+                    <div class="schema-panel">
+                        <div class="schema-panel-header">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+                            Schema Explorer
+                        </div>
+                        <div class="schema-list" id="schema-explorer-target">
+                            <!-- Populated dynamically -->
+                            <div style="color: var(--text-muted); font-size: 0.8rem; text-align: center; margin-top: 24px;">Seeding database schema...</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Page 3: Cheatsheet -->
+            <div id="tab-cheatsheet" class="page-content">
+                <div class="cheatsheet-header">
+                    <h2 style="font-size: 1.6rem; font-weight: 700;">PostgreSQL Cheatsheet & Syntax Reference</h2>
+                    <input type="text" class="cheatsheet-search" id="cheatsheet-search" placeholder="Search operations or functions...">
+                </div>
+                <div class="cheatsheet-grid" id="cheatsheet-grid">
+                    <!-- Populated dynamically via JS -->
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Edit Notes Modal Overlay -->
+    <div class="modal-overlay" id="edit-note-modal">
+        <div class="modal-container">
+            <div class="modal-header">
+                <div class="modal-title" id="edit-note-title">Edit Note Content</div>
+                <button class="btn-close-modal" id="btn-close-modal">&times;</button>
+            </div>
+            <div class="modal-body">
+                <p style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 4px;">
+                    Make temporary edits to this chapter's Markdown content below. To persist changes permanently in your GitHub repository, copy the text and overwrite the corresponding file in the <code>notes/</code> folder, or click <strong>Export Note</strong>.
+                </p>
+                <textarea class="modal-notes-textarea" id="edit-note-textarea" spellcheck="false"></textarea>
+            </div>
+            <div class="modal-footer">
+                <button class="btn-secondary-action" id="btn-cancel-note-edit">Cancel</button>
+                <button class="btn-action" id="btn-save-note-edit">Apply Draft Changes</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Script assets -->
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/prism.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-sql.min.js"></script>
+    <script type="module" src="app.js"></script>
+</body>
+</html>
